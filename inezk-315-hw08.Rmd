@@ -1,0 +1,122 @@
+---
+title: "36-315 Homework 08, Fall 2018"
+author: "Your Group Number, Group Member Names, and Group Member AndrewIDs Here"
+date: "Due Thursday 8th, 2018 (11:59pm ET) on Canvas"
+output: 
+  html_document:
+    toc:  true
+    toc_float:  true
+    code_folding:  hide
+---
+
+##  Homework 08:  Networks, Variable Visualization, and New 1-D Graph Critiques
+
+Problems 2 and 3 below. I didn't include a theme because I didn't know what theme would be added. The last line of each code chunk is the name of the variable, to display the plot. If you could add your theme name on that line, I would appreciate it! The problems I am referring to are 2b, 2f, and 3a. Thanks! -Inez
+
+***
+***
+
+
+
+#  Problem 2 {.tabset}
+
+(18 points)
+
+**Correlation Matrices for Examining Variable Relationships**
+
+## Part (a)
+
+```{r, warning = F, message = F}
+library(tidyverse)
+library(MASS)
+cars_cont <- dplyr::select(Cars93, Price, MPG.city, MPG.highway, EngineSize, 
+                           Horsepower, RPM, Fuel.tank.capacity, Passengers,
+                           Length, Wheelbase, Width, Turn.circle, Weight)
+```
+
+## Part (b)
+
+```{r, warning = F, message = F}
+library(reshape2)
+correlation_matrix <- cor(cars_cont)
+melted_cormat <- melt(correlation_matrix)
+cor.93 <- ggplot(data = melted_cormat, aes(x = Var1, y = Var2, fill = value)) + labs(title = "Correlation Matrix for Cars93 Dataset", x = "1st Variable", y = "2nd Variable")
+cor.93 <- cor.93 + geom_tile() + theme(axis.text.x = element_text(angle=90, hjust=1)) 
+cor.93 <- cor.93 + scale_fill_gradient2(low = "dark red", mid = "light grey", high = "dark blue", limits = c(-1,1)) 
+cor.93
+```
+
+## Part (c)
+
+We see that MGP.highway and MGP.city, Horsepower and Price, Width and Engine size, and Weight and Engine size are a couple pairs of variables that are highly positively correlated. Some pairs of variables that are highly negatively correlated include Weight and MGP.city, Fuel tank capacity and MGP city, and MGP.highway and fuel tank capacity. We see that Passengers and RPM, RPM and Price, Passengers and Horsepower, and Passengers and Horsepower are some variables that appear to have no correlation. 
+
+## Part (d)
+
+This is similar to a heat map in that it color codes by density. Darker colors correspond to stronger associations, while lighter colors correspond to weaker associations.
+
+## Part (e)
+
+This plot reminds me of the mosaic plots we did earlier in the semester.
+
+## Plot (f)
+
+```{r, warning=FALSE, message=FALSE}
+library(reshape2)
+#helper functions taken from included website link
+ get_lower_tri <- function(cormat){
+    cormat[upper.tri(cormat)]<- NA
+    return(cormat)
+ }
+ reorder_cormat <- function(cormat){
+dd <- as.dist((1-cormat)/2)
+hc <- hclust(dd)
+cormat <-cormat[hc$order, hc$order]
+}
+correlation_matrix <- get_lower_tri(signif(cor(cars_cont), digits =2))
+melted_cormat <- melt(correlation_matrix, na.rm = TRUE)
+cor.93 <- ggplot(data = melted_cormat, aes(x = Var1, y = Var2, fill = value)) + labs(title = "Correlation Matrix for Cars93 Dataset", x = "1st Variable", y = "2nd Variable")
+cor.93 <- cor.93 + geom_tile() + theme(axis.text.x = element_text(angle=90, hjust=1)) 
+cor.93 <- cor.93 + scale_fill_gradient2(low = "dark red", mid = "light grey", high = "dark blue", limits = c(-1,1)) 
+cor.93 <- cor.93 + geom_text(aes(Var2, Var1, label = value), color = "black", size = 4)
+cor.93
+```
+
+***
+***
+
+
+
+#  Problem 3 {.tabset}
+
+(20 points)
+
+**Variable Dendrograms**
+
+## Part (a)
+
+
+```{r, message=FALSE,warning=FALSE, fig.height=10, fig.width=10}
+library(dendextend)
+cormat <- cor(cars_cont)
+cormat <- 1 - abs(cormat)
+cormat <- as.dist(cormat)
+hc <- hclust(cormat)
+cars.dend <- as.dendrogram(hc) 
+cars.plt <- cars.dend %>% set("branches_k_color", k = 4) %>% ggplot(horiz=T)
+cars.plt <- cars.plt + labs(title = "Breakdown of Continuous Variables in Cars93 Dataset", x = "Variables", y = "Height") + scale_color_brewer(palette = "Dark2")
+cars.plt
+```
+
+## Part (b)
+
+The variables that are grouped together seems to match the correlation plot created in Problem 2. The variables that appear to be related to size, such as width, length, engine size, and wheelbarrow, appear to all be correlated with each other. The variables that are related to mileage, such as weight, fuel tank, miles per gallon variables, and horsepower appear to be grouped together as well.
+
+## Part (c)
+
+Some other possible statistics that could measure similarity include chi-squared statistic, MSE, and R^2 coefficients from regressing a univarate linear model.
+
+***
+***
+
+
+
