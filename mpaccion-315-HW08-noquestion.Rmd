@@ -1,0 +1,262 @@
+---
+title: "36-315 Homework 08, Fall 2018"
+author: "Group #3, (Inez Khan, Mason Paccione, Kady Yip, Eric Su), (inezk, mpaccion, kyip, esu1)"
+date: "Due Thursday 8th, 2018 (11:59pm ET) on Canvas"
+output: 
+  html_document:
+    toc:  true
+    toc_float:  true
+    code_folding:  hide
+---
+
+##  Homework 08:  Networks, Variable Visualization, and New 1-D Graph Critiques
+
+#  Problem 4 {.tabset}
+
+(2 points each)
+
+**_Love Actually_ Character Network**
+
+##  a.  
+
+FiveThirtyEight starts their analysis with summary tables describing the post-Love Actually careers of the actors in it, including "Whose movies ... made the most money?" and "Who made the best movies after...?" based on IMDB scores. The primary analysis is performed on the "connections" between characters in the movie, summarized in a network graphic, with characters/actors as nodes, and connection widths proportional to the onscreen time. This network is partitioned into three groups based on the economic/social classes of the characters, and isfurther summarized in a table showing which characters spoke the most to other characters.
+
+##  b.  
+
+```{r, warning = FALSE, message = FALSE}
+library(tidyverse)
+colorblind_palette <- c("#023FA5", "#8C94BF", "#D2D3DC", "#DDD0D2", 
+                        "#C18692", "#8E063B")
+# Probably want to remove this library call
+
+library(dendextend)
+love_adjacency <- read_csv("https://raw.githubusercontent.com/fivethirtyeight/data/master/love-actually/love_actually_adjacencies.csv")
+love_adjacency$actors <- fct_recode(love_adjacency$actors, 
+                                    "Bill Nighy" = "bill_nighy", 
+                                    "Kiera Knightley" = "keira_knightley", 
+                                    "Andrew Lincoln" = "andrew_lincoln",
+                                    "Hugh Grant" = "hugh_grant",
+                                    "Colin Firth" = "colin_firth",
+                                    "Alan Rickman" = "alan_rickman",
+                                    "Heike Makatsch" = "heike_makatsch",
+                                    "Laura Linney" = "laura_linney",
+                                    "Emma Thompson" = "emma_thompson",
+                                    "Liam Neeson" = "liam_neeson",
+                                    "Kris Marshall" = "kris_marshall",
+                                    "Abdul Salis" = "abdul_salis",
+                                    "Martin Freeman" = "martin_freeman",
+                                    "Rowan Atkinson" = "rowan_atkinson")
+colnames(love_adjacency) <- c("actors", "Bill Nighy", "Kiera Knightley", 
+                              "Andrew Lincoln", "Hugh Grant", "Colin Firth",
+                              "Alan Rickman", "Heike Makatsch", "Laura Linney",
+                              "Emma Thompson", "Liam Neeson", "Kris Marshall",
+                              "Abdul Salis", "Martin Freeman", "Rowan Atkinson")
+
+love_dist <- 1 / (1 + as.dist(love_adjacency[,-1]))
+love_dend <- as.dendrogram(hclust(love_dist, method = "average"))
+
+love_dend %>% set("labels", love_adjacency$actors, order_value = TRUE) %>% 
+  set("hang_leaves") %>%
+  set("labels_cex", .55) %>%
+  ggplot(horiz = T) + 
+  labs(title = "'Love Actully' Character Connections Dendrogram") #  Use your theme
+```
+
+As usual, the dendrogram is visualized as a tree. We have recoded the values as normally formatted names, and shrunk the size of the text to fit the names on the plot.
+
+##  c. 
+
+Characters connected by the final splits of the dendrogram are Abdul Salis and Kris Marshall, Andrew Lincoln and Keira Knightly, Liam Neeson and Bill Nighy, and Emma Thorn and Alan Rickman. Rowan Atkinson is minimally connected to the rest of the characters.
+
+##  d.
+
+`ggraph` is an extension too `ggplot2` to "support relational data such as networks and trees". The package was released on CRAN February 22, 2017. The function `ggraph()` can be used in a very similar way to `ggplot()`.
+
+##  e.  
+
+```{r}
+library(ggraph)
+ggraph(love_dend, layout = "dendrogram") +
+  geom_edge_elbow() +
+  geom_node_text(aes(label = label, filter = leaf), angle = 90, hjust = 1.1) +
+  ylim(c(-.8, 1)) +
+  theme(axis.title = element_blank(), axis.ticks = element_blank(), 
+        axis.text = element_blank()) +
+  labs(title = "'Love Actually' Dendrogram")
+```
+
+Names are rotated 90 degrees to prevent overlap. The window of the graph is likewise adjusted to show the whole name of every actor.
+
+##  f.  
+
+```{r, warning = FALSE, message = FALSE}
+library(igraph)
+library(ggraph)
+
+names <- love_adjacency[,1] %>% pull(actors)
+graph <- graph_from_adjacency_matrix(as.dist(love_adjacency[,-1]))
+set.seed(7)
+ggraph(graph) +
+  geom_node_point(size = 5) +
+  geom_edge_link() +
+  geom_node_text(aes(label = names), angle = 0, color = colorblind_palette[6], 
+                 size = 4) + xlim(c(0.6, 2.4)) + ylim(c(-1.53, -.2)) +
+  labs(title = "Network of Connections Between 'Love Actually' Characters") +
+  theme(axis.title = element_blank(), axis.ticks = element_blank(), 
+        axis.text = element_blank()) 
+# can also use theme_graph()
+ # may need to add your theme before the above final theme line to
+  # keep the axis unlabelled and unticked
+```
+
+Names are added to the network so that nodes are not indistinguishable from one another. The window (x limits and y limits) have been adjusted to show whole actor names.
+
+##  g.  (2 points each)  
+
+```{r, message = FALSE, warning = FALSE}
+set.seed(1)
+ggraph(graph) +
+  geom_node_point(size = 5, color = colorblind_palette[1]) +
+  geom_edge_fan(color = "slate grey") +
+  geom_node_text(aes(label = names), angle = 0, 
+                 size = 4) + xlim(-0.5, 1.2) +
+  labs(title = "Network of Connections Between 'Love Actually' Characters") +
+  theme(axis.title = element_blank(), axis.ticks = element_blank(), 
+        axis.text = element_blank())
+# can also use theme_graph()
+ #  Use your theme
+```
+
+Nodes have been recolored, as well as names. The edges have been made "fans", so as to represent the weight of the connections between nodes.
+
+##  h.  (BONUS:  3 points)  
+
+```{r, message = FALSE, warning = FALSE}
+gender = c("M", "F", "M", "M", "M",
+           "M", "F", "F", "F", "M",
+           "M", "M", "M", "M")
+set.seed(1)
+ggraph(graph) +
+  geom_node_point(size = 5, aes(color = gender)) +
+  scale_color_manual(values = colorblind_palette[c(1,6)]) +
+  geom_edge_fan(color = "slate grey") +
+  geom_node_text(aes(label = names), angle = 0, 
+                 size = 4) + xlim(-0.5, 1.2) +
+  labs(title = "Network of Connections Between 'Love Actually' Characters",
+       color = "Gender") +
+  theme(axis.title = element_blank(), axis.ticks = element_blank(), 
+        axis.text = element_blank())  #  Use your theme
+
+vertex.attributes(graph)$gender <- as.factor(gender)
+set.seed(1)
+ggraph(graph) +
+  geom_node_point(size = 5, color = colorblind_palette[6]) +
+  geom_edge_fan(color = "slate grey") +
+  geom_node_text(aes(label = names), angle = 0, 
+                 size = 4) + xlim(-0.5, 1.2) +
+  facet_nodes(~ gender) +
+  labs(title = "Network of Connections Between 'Love Actually' Characters") +
+  theme(axis.title = element_blank(), axis.ticks = element_blank(), 
+        axis.text = element_blank())  #  Use your theme
+
+```
+
+Colors in the first graph have been selected so that colorblind readers can easily discern the different genders.
+
+The nodes in the second graph are left uncolored as the facetting makes this unneccesary.
+
+***
+***
+
+#  Problem 5 {.tabset}
+
+(4 points each)
+
+**Waffle Charts**
+
+##  a.  
+
+```{r, warning = FALSE, message = FALSE}
+#  Set up data to create the waffle chart
+library(MASS)
+data(Cars93)
+var <- Cars93$Type  # the categorical variable you want to plot 
+nrows <- 9  #  the number of rows in the resulting waffle chart
+categ_table <- floor(table(var) / length(var) * (nrows*nrows))
+temp <- rep(names(categ_table), categ_table)
+df <- expand.grid(y = 1:nrows, x = 1:nrows) %>%
+  mutate(category = sort(c(temp, sample(names(categ_table), 
+                                        nrows^2 - length(temp), 
+                                        prob = categ_table, 
+                                        replace = T))))
+
+#  Make the Waffle Chart
+ggplot(df, aes(x = x, y = y, fill = category)) + 
+  geom_tile(color = "black", size = 0.5) +
+  scale_x_continuous(breaks = NULL) +
+  scale_y_continuous(breaks = NULL) +
+  scale_fill_brewer(palette = "Set3") +
+  labs(title = "Waffle Chart of Car Type",
+       caption = "Source:  Cars93 Dataset", 
+       fill = "Car Type",
+       x = NULL, y = NULL)  #  Use your theme
+```
+
+The waffle chart is essentially a pie chart where instead of angle representing proportion in a group, number of tiles does. It should be used for discrete factor data in a single dimension (one variable). There is some distortion from fitting the data into a perfect square number of tiles.
+
+##  b.  
+
+```{r, warning = FALSE, message = FALSE}
+#  Set up data to create the waffle chart
+imdb <- read_csv("https://raw.githubusercontent.com/mateyneykov/315_code_data/master/data/imdb_test.csv")
+var <- imdb$content_rating  # the categorical variable you want to plot 
+nrows <- 25  #  the number of rows in the resulting waffle chart
+categ_table <- floor(table(var) / length(var) * (nrows*nrows))
+temp <- rep(names(categ_table), categ_table)
+df <- expand.grid(y = 1:nrows, x = 1:nrows) %>%
+  mutate(category = sort(c(temp, sample(names(categ_table), 
+                                        nrows^2 - length(temp), 
+                                        prob = categ_table, 
+                                        replace = T))))
+
+#  Make the Waffle Chart
+ggplot(df, aes(x = x, y = y, fill = category)) + 
+  geom_tile(color = "black", size = 0.5) +
+  scale_x_continuous(breaks = NULL) +
+  scale_y_continuous(breaks = NULL) +
+  scale_fill_brewer(palette = "Set3") +
+  labs(title = "Waffle Chart of IMDB Content Rating",
+       subtitle = "25x25 Tiles",
+       caption = "Source:  IMDB Dataset", 
+       fill = "Rating",
+       x = NULL, y = NULL)  #  Use your theme
+
+nrows <- 50  #  the number of rows in the resulting waffle chart
+categ_table <- floor(table(var) / length(var) * (nrows*nrows))
+temp <- rep(names(categ_table), categ_table)
+df <- expand.grid(y = 1:nrows, x = 1:nrows) %>%
+  mutate(category = sort(c(temp, sample(names(categ_table), 
+                                        nrows^2 - length(temp), 
+                                        prob = categ_table, 
+                                        replace = T))))
+
+#  Make the Waffle Chart
+ggplot(df, aes(x = x, y = y, fill = category)) + 
+  geom_tile(color = "black", size = 0.5) +
+  scale_x_continuous(breaks = NULL) +
+  scale_y_continuous(breaks = NULL) +
+  scale_fill_brewer(palette = "Set3") +
+  labs(title = "Waffle Chart of IMDB Content Rating",
+       subtitle = "50x50 Tiles",
+       caption = "Source:  IMDB Dataset", 
+       fill = "Rating",
+       x = NULL, y = NULL)  #  Use your theme
+```
+
+We prefer the 50x50 graph as `NC-17` movies are not even represented in the 25x25 graph. 
+
+Which resolution is used for each is included.
+
+##  c.  
+
+There is some distortion from fitting the data into a "perfect square" number of tiles. This distortion increases if "low resolution" (few tiles) graphs are used. Some data levels, such as `NC-17` in this case, may be removed entirely except for high levels of resolution / very fine waffles. A simple bar chart would seem to be better in almost all situations. This data is proportional, but comparison between groups is somewhat difficult due to the irregular shapes, and there is no somple axis option to display count instead of proportion.
