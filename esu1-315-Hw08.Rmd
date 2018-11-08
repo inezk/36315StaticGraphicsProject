@@ -1,0 +1,102 @@
+---
+title: "36-315 Homework 08, Fall 2018"
+author: "Your Group Number, Group Member Names, and Group Member AndrewIDs Here"
+date: "Due Thursday 8th, 2018 (11:59pm ET) on Canvas"
+output: 
+  html_document:
+    toc:  true
+    toc_float:  true
+    code_folding:  hide
+---
+
+##  Homework 08:  Networks, Variable Visualization, and New 1-D Graph Critiques
+
+#  Problem 6 {.tabset}
+
+## a.
+
+```{r, warning = FALSE, message = FALSE, height = 6, width = 7}
+library(tidyverse)
+library(ggforce)
+library(MASS)
+color_palette <- c("#0099ff", "#cc33ff", "#ff4d4d", "#800000", "#cc8800", "#000066")
+data(Cars93)
+Cars93 %>% group_by(Type) %>% 
+  summarize(count = n()) %>% 
+  mutate(max = max(count),
+         focus_var = 0.2 * (count == max(count))) %>%
+  ggplot() + geom_arc_bar(aes(x0 = 0, y0 = 0, r0 = 0.5, r = 1, 
+                              fill = Type, amount = count), 
+                          stat = 'pie') + scale_fill_manual(values = color_palette) +
+  theme(axis.title = element_blank(), axis.ticks = element_blank(), 
+        axis.text = element_blank()) + 
+  labs(title = "Types of Cars", caption = "Data from 93 Cars on Sale in the USA in 1993 (Cars93 in MASS library)")
+```
+
+## b.
+
+The r0 paramter controls thickness; if you decrease the r0 parameter, the arcs become thicker, and if you increase the r0 paramter, the arcs become thinner. There doesn't seem to be a minimum or maximum value, but if you enter a negative value, mini-arcs appear in the center of the graph.
+
+## c.  
+
+```{r, warning = FALSE, message = FALSE}
+Cars93 %>% group_by(Type) %>% 
+  summarize(count = n()) %>% 
+  mutate(max = max(count),
+         focus_var = 0.2 * (count == max(count))) %>%
+  ggplot() + geom_arc_bar(aes(x0 = 0, y0 = 0, r0 = 0.5, r = 1,
+                              fill = Type, amount = count, explode = focus_var), 
+                          stat = 'pie') + scale_fill_manual(values = color_palette) +
+  theme(axis.title = element_blank(), axis.ticks = element_blank(), 
+        axis.text = element_blank()) + 
+  labs(title = "Types of Cars", caption = "Data from 93 Cars on Sale in the USA in 1993 (Cars93 in MASS library)")
+```
+
+Explode splits off the arcs by the corresponding values in focus_var. In this case, only midsize has a non-zero
+value, so it is the only one split off from the rest of the arcs.
+
+## d. 
+
+```{r, warning = FALSE, message = FALSE}
+Cars93 %>% group_by(Type) %>% 
+  summarize(count = n()) %>% 
+  mutate(max = max(count),
+         focus_var = 0.2 * (count == min(count))) %>%
+  ggplot() + geom_arc_bar(aes(x0 = 0, y0 = 0, r0 = 0.5, r = 1,
+                              fill = Type, amount = count, explode = focus_var), 
+                          stat = 'pie') + scale_fill_manual(values = color_palette) +   
+  theme(axis.title = element_blank(), axis.ticks = element_blank(), 
+        axis.text = element_blank()) + 
+  labs(title = "Types of Cars", caption = "Data from 93 Cars on Sale in the USA in 1993 (Cars93 in MASS library)")
+```
+
+## e.  
+
+I would use an arc pie chart to visualize a 1-d categorical variable. The issues with arc pie charts is that it is harder to compare the relative counts for each value, and it becomes harder to assess each value as the number of values increases. The issues with using explode to focus on a particular variable is that it distorts the value's quantity by breaking it off from the chart, and also creates a gap, making it hard to make inferences about the other values.
+
+#  Problem 7 {.tabset}
+
+## a. 
+
+```{r, warning = FALSE, message = FALSE}
+library(lubridate) 
+atp <- read_csv("https://raw.githubusercontent.com/mateyneykov/315_code_data/master/data/ATP%20Data.csv")
+atp <- atp %>% mutate(Formatted.date = dmy(Date),
+                      Numerical_Date = year(Formatted.date) + month(Formatted.date)/12 + day(Formatted.date)/365,
+                      WPts = as.numeric(WPts))
+ggplot(subset(atp, !is.na(Numerical_Date) & !is.na(WPts)), 
+       aes(x = Numerical_Date, y = WPts, color = ifelse(Series == "Grand Slam", "Yes", "No"))) + 
+  scale_color_manual(values = color_palette[1:2]) + 
+  geom_point(alpha = 0.01) + 
+  geom_smooth(method = "lm", se = FALSE) + 
+  facet_zoom(x = Numerical_Date >= 2015) + 
+  labs(title = "Winning Player's ATP Points Over Time",
+       subtitle = "Zoom: 2015-2017",
+       caption = "Data from ATP and Kaggle",
+       x = "Date (Y + M/12 + D/365)", 
+       y = "ATP Points", color = "Grand Slam") 
+```
+
+## b. 
+
+I can more clearly see the difference in trend lines between non-grand slam tournaments and grand slam tournaments, which leads me to believe that there might be a more significant difference than I previously expected.
